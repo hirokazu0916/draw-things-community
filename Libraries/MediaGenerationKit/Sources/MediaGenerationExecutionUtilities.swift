@@ -71,6 +71,16 @@ internal enum MediaGenerationExecutionUtilities {
     let tempDir = createTemporaryDirectory()
     let workspace = SQLiteWorkspace(
       filePath: "\(tempDir)/config.sqlite3", fileProtectionLevel: .noProtection)
+    // smart-studio patch: let the host app override memory behaviour through UserDefaults
+    // (8GB iPhones are "high performance", so text encoders stay resident during sampling
+    // and SDXL runs out of memory). Read once, before ModelPreloader is created.
+    let defaults = UserDefaults.standard
+    if let keepModelInMemory = defaults.object(forKey: "mgk.keep_model_in_memory") as? Int {
+      workspace.dictionary["keep_model_in_memory", Int.self] = keepModelInMemory
+    }
+    if let externalStore = defaults.object(forKey: "mgk.external_store") as? Bool {
+      workspace.dictionary["external_store", Bool.self] = externalStore
+    }
     let configurations = workspace.fetch(for: GenerationConfiguration.self).where(
       GenerationConfiguration.id == 0, limit: .limit(0))
 
